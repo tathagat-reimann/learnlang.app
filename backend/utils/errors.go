@@ -13,6 +13,7 @@ const (
 	CodeDuplicatePack   = "DUPLICATE_PACK"
 	CodeInvalidPack     = "INVALID_PACK"
 	CodeDuplicateVocab  = "DUPLICATE_VOCAB"
+	CodeInvalidVocab    = "INVALID_VOCAB"
 	CodeInvalidPacks    = "INVALID_PACKS"
 	CodeInvalidFileType = "INVALID_FILE_TYPE"
 	CodeFileTooLarge    = "FILE_TOO_LARGE"

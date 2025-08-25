@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"learnlang-backend/store"
 	"learnlang-backend/utils"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -144,6 +146,98 @@ func CreateVocabHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	store.CreateVocab(v, vocabKey)
 	utils.WriteCreatedData(w, v, nil)
+}
+
+// UpdateVocabHandler updates name/translation and optionally replaces the image.
+// Accepts multipart/form-data for image replacement with form fields:
+// - name (optional)
+// - translation (optional)
+// - image (optional file)
+// If no image is provided, existing image stays.
+func UpdateVocabHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract ID from URL
+	id := strings.TrimSpace(chi.URLParam(r, "id"))
+	if id == "" {
+		utils.WriteErrorWithRequest(w, r, http.StatusBadRequest, utils.CodeInvalidVocab, "missing vocab id")
+		return
+	}
+	// Fetch existing vocab
+	v, ok := store.GetVocabByID(id)
+	if !ok {
+		utils.WriteErrorWithRequest(w, r, http.StatusNotFound, utils.CodeInvalidVocab, fmt.Sprintf("unknown vocab id: %q", id))
+		return
+	}
+	ct := r.Header.Get("Content-Type")
+	if !strings.HasPrefix(ct, "multipart/form-data") {
+		utils.WriteErrorWithRequest(w, r, http.StatusUnsupportedMediaType, utils.CodeInvalidJSON, "multipart/form-data required")
+		return
+	}
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		utils.WriteErrorWithRequest(w, r, http.StatusBadRequest, utils.CodeInvalidJSON, "invalid multipart form")
+		return
+	}
+	name := strings.TrimSpace(r.FormValue("name"))
+	translation := strings.TrimSpace(r.FormValue("translation"))
+
+	// If provided, apply textual changes
+	if name != "" {
+		v.Name = name
+	}
+	if translation != "" {
+		v.Translation = translation
+	}
+
+	// Optional image replacement
+	file, header, err := r.FormFile("image")
+	if err == nil {
+		defer file.Close()
+		// Enforce max size and image content type
+		const maxSize = 10 << 20
+		if header.Size > 0 && header.Size > maxSize {
+			utils.WriteErrorWithRequest(w, r, http.StatusRequestEntityTooLarge, utils.CodeFileTooLarge, "file too large; max 10MB")
+			return
+		}
+		limited := http.MaxBytesReader(w, file, maxSize)
+		head := make([]byte, 512)
+		n, err := io.ReadFull(limited, head)
+		if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+			var mbe *http.MaxBytesError
+			if errors.As(err, &mbe) || errors.Is(err, io.EOF) {
+				utils.WriteErrorWithRequest(w, r, http.StatusRequestEntityTooLarge, utils.CodeFileTooLarge, "file too large; max 10MB")
+				return
+			}
+			utils.WriteErrorWithRequest(w, r, http.StatusBadRequest, utils.CodeInvalidFileType, "could not read file header")
+			return
+		}
+		contentType := http.DetectContentType(head[:n])
+		if !strings.HasPrefix(contentType, "image/") {
+			utils.WriteErrorWithRequest(w, r, http.StatusBadRequest, utils.CodeInvalidFileType, fmt.Sprintf("unsupported file type: %s", contentType))
+			return
+		}
+		// Use existing name when saving replacement file to keep naming consistent
+		baseName := v.Name
+		if baseName == "" {
+			baseName = strings.TrimSuffix(filepath.Base(header.Filename), filepath.Ext(header.Filename))
+		}
+		url, err := utils.UploadImage(baseName, header.Filename, contentType, head, n, limited)
+		if err != nil {
+			var mbe *http.MaxBytesError
+			if errors.As(err, &mbe) {
+				utils.WriteErrorWithRequest(w, r, http.StatusRequestEntityTooLarge, utils.CodeFileTooLarge, "file too large; max 10MB")
+				return
+			}
+			utils.WriteErrorWithRequest(w, r, http.StatusInternalServerError, utils.CodeInternal, "failed to save file")
+			return
+		}
+		v.Image = url
+	}
+
+	// Persist
+	if err := store.UpdateVocab(v); err != nil {
+		utils.WriteErrorWithRequest(w, r, http.StatusInternalServerError, utils.CodeInternal, "failed to update vocab")
+		return
+	}
+	utils.WriteOKData(w, v, nil)
 }
 
 // Flashcard represents a simplified view for the game (hide translation by default on UI).

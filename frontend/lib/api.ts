@@ -114,3 +114,32 @@ export async function createPack(input: { name: string; lang_id: string; user_id
   }
   return raw as Pack;
 }
+
+export async function updateVocab(
+  id: string,
+  changes: { name?: string; translation?: string; image?: File }
+): Promise<Vocab> {
+  const fd = new FormData();
+  if (changes.name) fd.append("name", changes.name);
+  if (typeof changes.translation === "string" && changes.translation.length > 0) {
+    fd.append("translation", changes.translation);
+  }
+  if (changes.image) fd.append("image", changes.image);
+  const res = await fetch(`${getBaseUrl()}/api/vocabs/${id}`, {
+    method: "PUT",
+    body: fd,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Failed to update vocab: ${res.status}`);
+  }
+  const raw: unknown = await res.json();
+  if (
+    typeof raw === "object" &&
+    raw !== null &&
+    "data" in (raw as Record<string, unknown>)
+  ) {
+    return (raw as ApiEnvelope<Vocab>).data;
+  }
+  return raw as Vocab;
+}

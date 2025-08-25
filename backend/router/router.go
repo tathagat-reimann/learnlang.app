@@ -43,6 +43,7 @@ func NewRouter() http.Handler {
 		r.Get("/packs/{id}", handlers.GetPackByIDHandler)
 
 		r.Post("/vocabs", handlers.CreateVocabHandler)
+		r.Put("/vocabs/{id}", handlers.UpdateVocabHandler)
 
 		r.Get("/flashcards", handlers.GetFlashcardsHandler)
 	})

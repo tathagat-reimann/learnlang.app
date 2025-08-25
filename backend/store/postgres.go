@@ -371,3 +371,42 @@ func GetPackByID(id string) (models.Pack, bool) {
 	}
 	return p, true
 }
+
+// GetVocabByID returns a vocab by ID if present.
+func GetVocabByID(id string) (models.Vocab, bool) {
+	if db == nil {
+		return models.Vocab{}, false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_ = probeSchema(ctx)
+	query := `SELECT id, image, name, `
+	if hasVocabTranslation {
+		query += `COALESCE(translation, '') as translation`
+	} else {
+		query += `'' as translation`
+	}
+	query += `, pack_id FROM vocabs WHERE id=$1`
+	var v models.Vocab
+	err := db.QueryRowContext(ctx, query, id).Scan(&v.ID, &v.Image, &v.Name, &v.Translation, &v.PackID)
+	if err != nil {
+		return models.Vocab{}, false
+	}
+	return v, true
+}
+
+// UpdateVocab updates name, translation, and/or image of a vocab.
+func UpdateVocab(v models.Vocab) error {
+	if db == nil {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_ = probeSchema(ctx)
+	if hasVocabTranslation {
+		_, err := db.ExecContext(ctx, `UPDATE vocabs SET image=$1, name=$2, translation=$3 WHERE id=$4`, v.Image, v.Name, v.Translation, v.ID)
+		return err
+	}
+	_, err := db.ExecContext(ctx, `UPDATE vocabs SET image=$1, name=$2 WHERE id=$3`, v.Image, v.Name, v.ID)
+	return err
+}
