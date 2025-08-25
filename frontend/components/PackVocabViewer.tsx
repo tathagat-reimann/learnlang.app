@@ -23,7 +23,6 @@ export default function PackVocabViewer({ vocabs, onEdit }: Props) {
               thumbSize={112}
               primaryLabel={v.name}
               secondaryLabel={v.translation}
-              onEdit={onEdit ? () => onEdit(v) : undefined}
             />
             <button
               type="button"

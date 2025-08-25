@@ -8,10 +8,9 @@ type Props = {
   thumbSize?: number; // px
   primaryLabel?: string; // shown immediately when zoomed (e.g., name)
   secondaryLabel?: string; // shown after click (e.g., translation)
-  onEdit?: () => void; // optional edit handler; when present, show Edit control in overlay
 };
 
-export default function ImageZoom({ src, alt = "", thumbSize = 80, primaryLabel, secondaryLabel, onEdit }: Props) {
+export default function ImageZoom({ src, alt = "", thumbSize = 80, primaryLabel, secondaryLabel }: Props) {
   const [zoomed, setZoomed] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
@@ -87,19 +86,6 @@ export default function ImageZoom({ src, alt = "", thumbSize = 80, primaryLabel,
               alt={alt}
               className="max-w-full max-h-[85vh] rounded shadow-lg"
             />
-      {onEdit && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                }}
-        className="absolute top-2 right-2 px-2.5 py-1.5 text-sm rounded bg-white text-gray-900 shadow focus:outline-none focus:ring-2 focus:ring-blue-700"
-                aria-label="Edit"
-              >
-                Edit
-              </button>
-            )}
             {(primaryLabel || (revealed && secondaryLabel)) && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="px-4 py-2 bg-black/70 text-white text-xl font-semibold rounded">
