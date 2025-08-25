@@ -1,6 +1,6 @@
 import { getPackDetail } from "@/lib/api";
 import AddVocabForm from "@/components/AddVocabForm";
-import PackVocabViewer from "@/components/PackVocabViewer";
+import PackVocabViewerClient from "@/components/PackVocabViewerClient";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export default async function PackDetailPage({ params }: Props) {
         <h1 className="text-2xl font-semibold">{detail.pack.name}</h1>
       </div>
   <AddVocabForm packId={detail.pack.id} />
-  <PackVocabViewer vocabs={detail.vocabs} />
+  <PackVocabViewerClient vocabs={detail.vocabs} />
     </main>
   );
 }
