@@ -6,10 +6,11 @@ type Props = {
   src: string;
   alt?: string;
   thumbSize?: number; // px
-  onRevealLabel?: string; // show on overlay when zoomed and clicked
+  primaryLabel?: string; // shown immediately when zoomed (e.g., name)
+  secondaryLabel?: string; // shown after click (e.g., translation)
 };
 
-export default function ImageZoom({ src, alt = "", thumbSize = 80, onRevealLabel }: Props) {
+export default function ImageZoom({ src, alt = "", thumbSize = 80, primaryLabel, secondaryLabel }: Props) {
   const [zoomed, setZoomed] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
@@ -17,8 +18,8 @@ export default function ImageZoom({ src, alt = "", thumbSize = 80, onRevealLabel
     if (!zoomed) {
       setZoomed(true);
       setRevealed(false);
-    } else if (!revealed) {
-      // second click reveals label
+    } else if (!revealed && secondaryLabel) {
+      // second click reveals translation
       setRevealed(true);
     } else {
       // third click closes
@@ -74,10 +75,10 @@ export default function ImageZoom({ src, alt = "", thumbSize = 80, onRevealLabel
               alt={alt}
               className="max-w-full max-h-[85vh] rounded shadow-lg"
             />
-            {revealed && onRevealLabel && (
+            {(primaryLabel || (revealed && secondaryLabel)) && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="px-4 py-2 bg-black/70 text-white text-xl font-semibold rounded">
-                  {onRevealLabel}
+                  {revealed && secondaryLabel ? secondaryLabel : primaryLabel}
                 </span>
               </div>
             )}
