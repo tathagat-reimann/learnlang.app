@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { getPacks, type Pack } from "@/lib/api";
+import { getPacks, type Pack, getLanguages } from "@/lib/api";
+import CreatePackForm from "@/components/CreatePackForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function PacksPage() {
   let packs: Pack[] = [];
+  const languages = await getLanguages();
   try {
     packs = await getPacks();
   } catch {
@@ -19,6 +21,7 @@ export default async function PacksPage() {
   return (
     <main className="p-6 max-w-3xl mx-auto">
       <h1 className="text-2xl font-semibold mb-4">Packs</h1>
+      <CreatePackForm languages={languages} />
       {packs.length === 0 ? (
         <p className="text-gray-500">No packs yet.</p>
       ) : (

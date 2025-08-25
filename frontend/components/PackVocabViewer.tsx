@@ -4,21 +4,20 @@ import { useState } from "react";
 import ImageZoom from "@/components/ImageZoom";
 import { toImageUrl, type Vocab } from "@/lib/api";
 
-type Props = {
-  vocabs: Vocab[];
-};
+type Props = { vocabs: Vocab[] | null | undefined };
 
 export default function PackVocabViewer({ vocabs }: Props) {
   const [mode, setMode] = useState<"list" | "grid">("list");
 
-  if (vocabs.length === 0) {
+  const list = Array.isArray(vocabs) ? vocabs : [];
+  if (list.length === 0) {
     return <p className="text-gray-500">No vocabs in this pack.</p>;
   }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">{vocabs.length} items</div>
+  <div className="text-sm text-gray-600">{list.length} items</div>
         <div className="inline-flex rounded overflow-hidden border">
           <button
             type="button"
@@ -56,7 +55,7 @@ export default function PackVocabViewer({ vocabs }: Props) {
               </tr>
             </thead>
             <tbody>
-              {vocabs.map((v) => (
+        {list.map((v) => (
                 <tr key={v.id} className="align-top">
                   <td className="p-2 border-b">
                     <ImageZoom
@@ -74,7 +73,7 @@ export default function PackVocabViewer({ vocabs }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {vocabs.map((v) => (
+      {list.map((v) => (
             <div key={v.id} className="flex items-center justify-center">
               <ImageZoom
                 src={toImageUrl(v.image)}

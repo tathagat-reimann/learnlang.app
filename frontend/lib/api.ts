@@ -19,6 +19,12 @@ export type PackDetail = {
   vocabs: Vocab[];
 };
 
+export type Language = {
+  id: string;
+  name: string;
+  code: string;
+};
+
 function getBaseUrl() {
   // Prefer explicit NEXT_PUBLIC_API_BASE for both server and client usage
   const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
@@ -73,4 +79,38 @@ export function toImageUrl(imagePath: string): string {
     return `${base}/${imagePath}`;
   }
   return `${base}${imagePath}`;
+}
+
+export async function getLanguages(): Promise<Language[]> {
+  const res = await fetch(`${getBaseUrl()}/api/languages`, { next: { revalidate: 0 } });
+  if (!res.ok) throw new Error(`Failed to fetch languages: ${res.status}`);
+  const raw: unknown = await res.json();
+  if (Array.isArray(raw)) return raw as Language[];
+  if (
+    typeof raw === "object" &&
+    raw !== null &&
+    "data" in (raw as Record<string, unknown>) &&
+    Array.isArray((raw as { data?: unknown }).data)
+  ) {
+    return (raw as { data: Language[] }).data;
+  }
+  return [];
+}
+
+export async function createPack(input: { name: string; lang_id: string; user_id: string }): Promise<Pack> {
+  const res = await fetch(`${getBaseUrl()}/api/packs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new Error(`Failed to create pack: ${res.status}`);
+  const raw: unknown = await res.json();
+  if (
+    typeof raw === "object" &&
+    raw !== null &&
+    "data" in (raw as Record<string, unknown>)
+  ) {
+    return (raw as { data: Pack }).data;
+  }
+  return raw as Pack;
 }
